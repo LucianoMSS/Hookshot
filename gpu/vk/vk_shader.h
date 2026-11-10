@@ -131,7 +131,5 @@ Shader::TextureType handle_texture_type(uint32_t handle);
 void shader_stats(int64_t* translated, int64_t* failed);
 double shader_translate_ms();
 void program_released(const nvn_prog* p);
-/// Steam Deck (VANGOGH): set RX_VK_MESH_NOCULL for the hanging cull task unless the player already chose (#817)
-void mesh_nocull_apply_device_defaults();
 
 } // namespace mkwvk
