@@ -2,6 +2,7 @@
 #pragma once
 
 #include <cstdint>
+#include <cstring>
 #include <array>
 #include <atomic>
 #include <mutex>
@@ -60,6 +61,11 @@ struct Device {
     bool swapchain_colorspace = false;   // (hookshot) VK_EXT_swapchain_colorspace: HDR10 surfaces are listed
     bool hdr = false;                    // (hookshot) the swapchain is HDR10 (ST 2084, Rec. 2020): framegen_hdr writes it
     bool mesh_fallback = false;   // (hookshot) no VK_EXT_mesh_shader: task and mesh programs as compute shaders (vk_shader.cpp)
+    // (fork) Steam Deck APU: vendor AMD + Van Gogh (deviceID 0x163F or "VANGOGH" in RADV's name)
+    bool is_vangogh() const {
+        return props.vendorID == 0x1002 &&
+               (props.deviceID == 0x163F || (props.deviceName[0] && std::strstr(props.deviceName, "VANGOGH")));
+    }
     VkPhysicalDeviceVulkan12Features vk12{};
     VkPhysicalDeviceVulkan13Features vk13{};
     VkShaderStageFlags sg32_stages = 0;   // (stages that run at 32 lanes when asked: the size the translated programs assume)

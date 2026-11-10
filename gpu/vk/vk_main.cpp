@@ -23,6 +23,7 @@
 #include "vk_dlss.h"
 #include "vk_reflex.h"
 #include "vk_progress.h"
+#include "vk_shader.h"
 
 namespace vkx {
 #define VKX_DEFINE(f) PFN_##f f;
@@ -223,8 +224,21 @@ bool create_device() {
     };
     // (RX_VK_FORCE_MESH_FALLBACK=1, a test: mesh shaders not used where they are, so the no-mesh fallback the GTX 10xx and RX 5000
     // cards run (issue 640) can be tried on any GPU)
-    if (getenv("RX_VK_FORCE_MESH_FALLBACK") && atoi(getenv("RX_VK_FORCE_MESH_FALLBACK")) != 0) dev.mesh_shader = false;
-    else optional(VK_EXT_MESH_SHADER_EXTENSION_NAME, dev.mesh_shader);
+    // (fork) Steam Deck (VANGOGH): native task/mesh hangs outdoor / Deku Tree (#1000, #1318). Unless the player keeps the
+    // native path (RX_VK_DECK_NATIVE_MESH=1) or already set FORCE_MESH_FALLBACK, run the compute fallback on Deck.
+    {
+        const char* force = getenv("RX_VK_FORCE_MESH_FALLBACK");
+        const bool force_on = force && atoi(force) != 0;
+        const bool force_off = force && force[0] == '0' && force[1] == '\0';
+        const char* native = getenv("RX_VK_DECK_NATIVE_MESH");
+        const bool keep_native = native && atoi(native) != 0;
+        if (force_on || (!force_off && !keep_native && dev.is_vangogh())) {
+            if (!force_on && dev.is_vangogh())
+                logf("vk: Steam Deck (VANGOGH): mesh compute fallback on (outdoor hang workaround; "
+                     "RX_VK_DECK_NATIVE_MESH=1 keeps native mesh; #1000)");
+            dev.mesh_shader = false;
+        } else optional(VK_EXT_MESH_SHADER_EXTENSION_NAME, dev.mesh_shader);
+    }
     optional(VK_EXT_EXTERNAL_MEMORY_HOST_EXTENSION_NAME, dev.external_memory_host);
     optional(VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME, dev.external_memory_fd);   // (guest memory as udmabufs: vk_memory.cpp import_dma_buf)
     if (dev.external_memory_fd) optional(VK_EXT_EXTERNAL_MEMORY_DMA_BUF_EXTENSION_NAME, dev.dma_buf_import);
@@ -943,6 +957,7 @@ const MkwVkRenderer* mkwvk_init(const MkwVkHost* h) {
         return nullptr;
     }
     if (!create_instance() || !pick_device() || !create_device()) return nullptr;
+    mesh_nocull_apply_device_defaults();   // (before any program cache: VANGOGH gets RX_VK_MESH_NOCULL for #817)
     logf("vk: %s, Vulkan %u.%u, driver %#x; mesh shaders %s, host memory import %s, pipeline libraries %s",
          dev.props.deviceName, VK_VERSION_MAJOR(dev.props.apiVersion), VK_VERSION_MINOR(dev.props.apiVersion),
          dev.props.driverVersion, dev.mesh_shader ? "yes" : "no", dev.external_memory_host ? "yes" : "no",
