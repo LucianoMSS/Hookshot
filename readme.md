@@ -176,7 +176,7 @@ with `--update <game folder>`.
 | Parts of the picture are missing, or a message says your card has no mesh shader support | The card or its driver has no mesh shaders. Update the driver; older cards are not supported ([#640](https://github.com/NotRexed/Hookshot/issues/640)) |
 | AMD: blocky textures, solid rectangles in the sky or unusually dark courtyard surfaces | Try the [RGBA8 texture workaround](#amd-texture-workaround). It uses more graphics memory |
 | Linux: the game does not start or the picture is broken | The game needs a Vulkan 1.3 driver with mesh shaders. Check with `vulkaninfo \| grep mesh`: it should list `VK_EXT_mesh_shader`. Update Mesa or the NVIDIA driver |
-| Steam Deck: the game freezes and closes in Kokiri Forest or the Great Deku Tree (`gfx_0.0.0 timeout` in `journalctl -k`) | `RX_VK_MESH_NOCULL=2c56dc1006942f74` in `hookshot_env.txt` gets past it with every model drawn (the culling pass that runs for seconds is turned off). `RX_VK_SKIP_CODE=2c56dc1006942f74` also gets past it, but the models those draws make go missing (see the [development guide](docs/development.md#switches-for-testing-and-debugging), [#817](https://github.com/NotRexed/Hookshot/issues/817)) |
+| Steam Deck: the game freezes and closes after the intro, in Kokiri Forest or the Great Deku Tree (`gfx_0.0.0 timeout` in `journalctl -k`) | On RADV VANGOGH the game turns on `RX_VK_MESH_NOCULL=2c56dc1006942f74` by itself (every model stays drawn; the long culling pass is compiled out). Set `RX_VK_MESH_NOCULL=0` to leave the cull as it is. `RX_VK_SKIP_CODE=2c56dc1006942f74` also gets past it, but the models those draws make go missing (see the [development guide](docs/development.md#switches-for-testing-and-debugging), [#817](https://github.com/NotRexed/Hookshot/issues/817), [#1000](https://github.com/NotRexed/Hookshot/issues/1000)) |
 | "Your antivirus removed part of the build tools" | A false alarm on unsigned programs. Restore the files from Windows Security's Protection history, or add `%LOCALAPPDATA%\HookshotBuilder` to its exclusions, then press **Repair** |
 | Stutter the first time you see something | Normal for now: shaders are being prepared. It gets better when you pass through the same place again |
 | The game is in the wrong language | Change the code in `language.txt` in the game folder. The file lists them all |
@@ -582,7 +582,7 @@ of the prefixes (the keys the log prints after "its code:"). On a Steam Deck, `R
 avoids a GPU hang in Kokiri Forest and the Great Deku Tree: the GPU runs for seconds in the programs that share that
 task shader (a culling pass) until the kernel resets it ([#817](https://github.com/NotRexed/Hookshot/issues/817)).
 It is a workaround, not a fix: those are task + mesh programs, so the geometry they draw goes with them, and key models
-are missing while it is set. Off unless set.
+are missing while it is set. Prefer the Deck's automatic `RX_VK_MESH_NOCULL` (same key, models kept). Off unless set.
 
 The switches for scripted test runs, screenshots, frame dumps and profiles are in the
 [development guide](docs/development.md#switches-for-testing-and-debugging).

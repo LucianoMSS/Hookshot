@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <cctype>
 #include <chrono>
+#include <cstdlib>
 #include <stdexcept>
 #include <cstdio>
 #include <functional>
@@ -898,8 +899,26 @@ void oot_visual(Shader::IR::Program& program, uint64_t key) {
 // visible = (result & 1) | (c3[2320] & 4), bit 4 being the game's own "draw everything". That comparison becomes true,
 // and dead code elimination takes the grid walk with it: every meshlet is drawn (the rasterizer clips what is off
 // screen), none is left out; RX_VK_SKIP_CODE left these programs out instead, and their models with them. The Steam
-// Deck plays with RX_VK_MESH_NOCULL=2c56dc1006942f74 (issue 817). A name under RX_VK_MESH, so the program cache starts
-// again when it changes.
+// Deck (RADV VANGOGH) turns it on by itself (mesh_nocull_apply_device_defaults); RX_VK_MESH_NOCULL=0 leaves the cull as
+// it is. A name under RX_VK_MESH, so the program cache starts again when it changes.
+constexpr const char* kDeckMeshNocull = "2c56dc1006942f74";
+
+void mesh_nocull_apply_device_defaults() {
+    // (before disk_stamp / program cache: the env must be set so the stamp sees RX_VK_MESH_NOCULL and starts again)
+    if (getenv("RX_VK_MESH_NOCULL")) return;
+    if (dev.props.vendorID != 0x1002) return;
+    const bool vangogh = dev.props.deviceID == 0x163F ||
+                         (dev.props.deviceName[0] && std::strstr(dev.props.deviceName, "VANGOGH"));
+    if (!vangogh) return;
+#ifdef _WIN32
+    _putenv("RX_VK_MESH_NOCULL=2c56dc1006942f74");
+#else
+    setenv("RX_VK_MESH_NOCULL", kDeckMeshNocull, 0);
+#endif
+    logf("vk: Steam Deck (VANGOGH): RX_VK_MESH_NOCULL=%s on (set to 0 to leave the cull as it is; #817, #1000)",
+         kDeckMeshNocull);
+}
+
 bool mesh_nocull_wanted(uint64_t code_key) {
     static const std::string list = getenv("RX_VK_MESH_NOCULL") ? getenv("RX_VK_MESH_NOCULL") : "";
     if (list.empty() || list == "0") return false;

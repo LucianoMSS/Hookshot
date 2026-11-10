@@ -23,6 +23,7 @@
 #include "vk_dlss.h"
 #include "vk_reflex.h"
 #include "vk_progress.h"
+#include "vk_shader.h"
 
 namespace vkx {
 #define VKX_DEFINE(f) PFN_##f f;
@@ -943,6 +944,7 @@ const MkwVkRenderer* mkwvk_init(const MkwVkHost* h) {
         return nullptr;
     }
     if (!create_instance() || !pick_device() || !create_device()) return nullptr;
+    mesh_nocull_apply_device_defaults();   // (before any program cache: VANGOGH gets RX_VK_MESH_NOCULL for #817)
     logf("vk: %s, Vulkan %u.%u, driver %#x; mesh shaders %s, host memory import %s, pipeline libraries %s",
          dev.props.deviceName, VK_VERSION_MAJOR(dev.props.apiVersion), VK_VERSION_MINOR(dev.props.apiVersion),
          dev.props.driverVersion, dev.mesh_shader ? "yes" : "no", dev.external_memory_host ? "yes" : "no",

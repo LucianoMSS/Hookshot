@@ -63,11 +63,11 @@ experiments: `grep -rn 'getenv("' host gpu/vk` lists them, and the comment where
 "Set" below means any value, `0` included.
 
 `RX_VK_MESH_NOCULL=<prefix,...>` turns off the culling in the task shaders whose native code key starts with one of
-the prefixes. On a Steam Deck, `RX_VK_MESH_NOCULL=2c56dc1006942f74` avoids the same hang without leaving anything out:
-that task shader walks a coarse depth grid cell by cell for every meshlet and ends with
+the prefixes. On a Steam Deck (RADV VANGOGH), `2c56dc1006942f74` is set by itself when the env is unset; `0` leaves the
+cull as it is. That task shader walks a coarse depth grid cell by cell for every meshlet and ends with
 `visible = (result & 1) | (c3[2320] & 4)`, bit 4 being the game's own "draw everything". The switch makes that answer
 true, and dead code elimination removes the grid walk, so every meshlet is drawn and the rasterizer clips what is off
-screen. It costs some GPU time on cards that cull quickly, so it is off unless set. The log says
+screen. It costs some GPU time on cards that cull quickly, so it stays off on other GPUs. The log says
 "culling off, every meshlet drawn" for each task shader it changed.
 
 ### Running a test
