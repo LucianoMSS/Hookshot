@@ -35,23 +35,26 @@ Applied only when each switch is **unset**. Master kill switch: `RX_VK_DECK_DEFA
 
 Do **not** set `RX_VK_SKIP_CODE` for Deck play: it hides geometry and still fails outdoors.
 
-## Build / test on Deck
+## Build / test on Deck (simple)
+
+You keep **playing** `~/Games/Hookshot` the same way as always. The fork only replaces its renderer (`.so`).
 
 ```bash
-# source (already cloned)
+ssh steamdeck   # or a keyboard terminal on the Deck
 cd ~/src/Hookshot
-git fetch origin && git checkout deck-vangogh-defaults && git pull
-
-# build into a game folder (AppImage --cli or make_game.py — ~40 min)
-# then clear hookshot_env.txt overrides so fork defaults apply, or keep only:
-#   RX_VK_DECK_NATIVE_MESH=1   # A/B native hang
-#   RX_VK_DECK_DEFAULTS=0      # all fork defaults off
+git pull
+./scripts/deck-rebuild-vk.sh ~/Games/Hookshot
 ```
 
-Confirm in `hookshot_log.txt`:
-- `Steam Deck (VANGOGH): fork defaults on`
-- `no mesh shaders: task and mesh programs run as compute shaders`
-- outdoor door save: no earlyoom, picture not black, no `device lost`
+That uses your already-installed Hookshot Builder, overlays this fork, and rebuilds **only** `hookshot_vk.so` (faster than a full game rebuild). Log: `~/.cache/hookshot-deck-rebuild.log`.
+
+Then start the game **exactly as before** (same desktop shortcut / same folder). Optional check:
+
+```bash
+~/Games/Hookshot/bin/hookshot
+```
+
+In `~/Games/Hookshot/hookshot_log.txt` look for `Steam Deck (VANGOGH): fork defaults on`.
 
 ## Paths
 
