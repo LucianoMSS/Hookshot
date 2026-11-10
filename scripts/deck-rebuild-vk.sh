@@ -96,14 +96,17 @@ export RX_VK_ONLY=1
 export PATH="$LIB/emsdk/upstream/bin:$PATH"
 export HOOKSHOT_JOBS="${HOOKSHOT_JOBS:-$(nproc)}"
 
+# Prefer the fork's make_game.py (newer flags) when present; keep builder nx2 otherwise.
+if [[ -f "$FORK/nx2/make_game.py" ]]; then
+  rsync -a "$FORK/nx2/make_game.py" "$TOOLS_DST/nx2/make_game.py"
+  rsync -a "$FORK/nx2/build.py" "$TOOLS_DST/nx2/build.py" 2>/dev/null || true
+fi
+
 echo "==> RX_CPM=$RX_CPM"
 echo "==> Compiling Vulkan back end from fork (RX_VK_ONLY=1)…"
-# Work dir with existing lift; RX_VK_ONLY skips recompiling game C.
-WORK="${XDG_CACHE_HOME:-$HOME/.cache}/hookshot-builder"
+# --update reuses the game folder's dump; RX_VK_ONLY skips recompiling lifted game C.
 set +e
-"$PY" -I "$HOOKSHOT_TOOLS/nx2/make_game.py" \
-  --romfs "$GAME/romfs" --exefs "$GAME/.hookshot_exefs" --out "$GAME" \
-  --work "$WORK" --jobs "$HOOKSHOT_JOBS" --no-prepare-shaders \
+"$PY" -I "$HOOKSHOT_TOOLS/nx2/make_game.py" --update "$GAME" --jobs "$HOOKSHOT_JOBS" \
   2>&1 | tee "$LOG"
 rc=${PIPESTATUS[0]}
 set -e
@@ -112,9 +115,9 @@ if [[ $rc -ne 0 ]]; then
   exit $rc
 fi
 
-if ! rg -q "Vulkan back end|hookshot_vk|vk_deck|linking hookshot_vk" "$LOG"; then
+if ! rg -q "Vulkan back end|vk_.*\\.o|hookshot_vk\\.so" "$LOG"; then
   echo "Build log shows no Vulkan back-end compile — refusing to leave an old .so in place." >&2
-  rg -n "Vulkan|RX_CPM|cpm|header|error|fail" "$LOG" | head -40 >&2 || true
+  rg -n "Vulkan|RX_CPM|cpm|header|error|fail|prebuilt|as built" "$LOG" | head -40 >&2 || true
   exit 1
 fi
 
