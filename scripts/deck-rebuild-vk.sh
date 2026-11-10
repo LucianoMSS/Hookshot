@@ -96,14 +96,9 @@ export RX_VK_ONLY=1
 export PATH="$LIB/emsdk/upstream/bin:$PATH"
 export HOOKSHOT_JOBS="${HOOKSHOT_JOBS:-$(nproc)}"
 
-# Prefer the fork's make_game.py (newer flags) when present; keep builder nx2 otherwise.
-if [[ -f "$FORK/nx2/make_game.py" ]]; then
-  rsync -a "$FORK/nx2/make_game.py" "$TOOLS_DST/nx2/make_game.py"
-  rsync -a "$FORK/nx2/build.py" "$TOOLS_DST/nx2/build.py" 2>/dev/null || true
-fi
-
 echo "==> RX_CPM=$RX_CPM"
 echo "==> Compiling Vulkan back end from fork (RX_VK_ONLY=1)…"
+# Keep the builder's nx2/make_game.py (must match its nup.py). Only gpu/ is from the fork.
 # --update reuses the game folder's dump; RX_VK_ONLY skips recompiling lifted game C.
 set +e
 "$PY" -I "$HOOKSHOT_TOOLS/nx2/make_game.py" --update "$GAME" --jobs "$HOOKSHOT_JOBS" \
